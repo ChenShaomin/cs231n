@@ -121,7 +121,10 @@ class KNearestNeighbor(object):
     # HINT: Try to formulate the l2 distance using matrix multiplication    #
     #       and two broadcast sums.                                         #
     #########################################################################
-    pass
+    dists = -2 * np.dot(X, self.X_train.T)
+    dists += np.sum(np.square(X), axis = 1).reshape(num_test, 1)
+    dists += np.sum(np.square(self.X_train), axis = 1).reshape(1, num_train)
+    dists = np.sqrt(dists)
     #########################################################################
     #                         END OF YOUR CODE                              #
     #########################################################################
@@ -153,7 +156,8 @@ class KNearestNeighbor(object):
       # neighbors. Store these labels in closest_y.                           #
       # Hint: Look up the function numpy.argsort.                             #
       #########################################################################
-      pass
+      closest_y_index = np.argsort(dists[i, :])[:k]
+      closest_y = self.y_train[closest_y_index]
       #########################################################################
       # TODO:                                                                 #
       # Now that you have found the labels of the k nearest neighbors, you    #
@@ -161,7 +165,17 @@ class KNearestNeighbor(object):
       # Store this label in y_pred[i]. Break ties by choosing the smaller     #
       # label.                                                                #
       #########################################################################
-      pass
+      temp = 0
+      dict_closest_y = {}
+      for item in closest_y:
+        if item not in dict_closest_y:
+            dict_closest_y[item] = 1
+        else:
+            dict_closest_y[item] += 1
+      for key in dict_closest_y:
+        if dict_closest_y[key] > temp:
+            temp = dict_closest_y[key]
+            y_pred[i] = key
       #########################################################################
       #                           END OF YOUR CODE                            # 
       #########################################################################
