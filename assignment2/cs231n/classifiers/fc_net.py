@@ -47,7 +47,10 @@ class TwoLayerNet(object):
         # and biases using the keys 'W1' and 'b1' and second layer                 #
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
-        pass
+        self.params['W1'] = np.random.normal(loc=0, scale=weight_scale, size=(input_dim, hidden_dim))
+        self.params['b1'] = np.zeros((1, hidden_dim))
+        self.params['W2'] = np.random.normal(0, weight_scale, (hidden_dim, num_classes))
+        self.params['b2'] = np.zeros((1, num_classes))
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -77,7 +80,17 @@ class TwoLayerNet(object):
         # TODO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
-        pass
+        N = X.shape[0]
+        W1 = self.params['W1']
+        b1 = self.params['b1']
+        W2 = self.params['W2']
+        b2 = self.params['b2']
+        
+        X = X.reshape(N, -1)
+        Z1 = np.dot(X, W1) + b1
+        A1 = np.maximum(Z1, 0)
+        Z2 = np.dot(Z1, W2) + b2
+        scores = Z2
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -97,7 +110,23 @@ class TwoLayerNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
-        pass
+        s = np.sum(np.exp(Z2), axis=1)
+        L = -Z2[range(N), y] + np.log(s)
+        loss = np.mean(L) + 0.5 * self.reg * (np.sum(W1*W1) + np.sum(W2*W2))
+        
+        dZ2 = np.exp(Z2) / np.sum(np.exp(Z2), axis=1, keepdims=True)
+        dZ2[range(N), y] -= 1
+        dZ2 /= N
+
+        grads['W2'] = np.dot(A1.T, dZ2) + self.reg * W2
+        grads['b2'] = np.sum(dZ2, axis=0)
+
+        dA1 = np.dot(dZ2, W2.T)
+        dA1[Z1 < 0] = 0
+        dZ1 = dA1
+
+        grads['W1'] = np.dot(X.T, dZ1) + self.reg * W1
+        grads['b1'] = np.sum(dZ1, axis=0)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
