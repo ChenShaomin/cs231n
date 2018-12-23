@@ -247,6 +247,9 @@ class FullyConnectedNet(object):
         # layer, etc.                                                              #
         ############################################################################
         cache = list(range(self.num_layers+1))
+        if self.use_dropout:
+            cache_dropout = list(range(self.num_layers+1))
+        
         Z = list(range(self.num_layers+1))
         Z[0] = X
        
@@ -260,6 +263,8 @@ class FullyConnectedNet(object):
                 Z[i], cache[i] = affine_ln_relu_forward(Z[i-1], W, b, gamma, beta, self.bn_params[i-1])
             else:
                 Z[i], cache[i] = affine_relu_forward(Z[i-1], W, b)
+            if self.use_dropout:
+                Z[i], cache_dropout[i] = dropout_forward(Z[i], self.dropout_param)
         
         Z[self.num_layers], cache[self.num_layers] = affine_forward(Z[self.num_layers-1], self.params['W'+str(self.num_layers)],self.params['b'+str(self.num_layers)])
         scores = Z[self.num_layers]
@@ -289,10 +294,13 @@ class FullyConnectedNet(object):
         
         dZ = list(range(self.num_layers+1))
         
-        for i in range(self.num_layers, 0, -1):
-            if i == self.num_layers:
-                dZ[i], grads['W'+str(i)], grads['b'+str(i)] = affine_backward(dscores, cache[i])
-            elif self.normalization=='batchnorm':
+        i = self.num_layers
+        dZ[i], grads['W'+str(i)], grads['b'+str(i)] = affine_backward(dscores, cache[i])
+        
+        for i in range(self.num_layers-1, 0, -1):
+            if self.use_dropout:
+                dZ[i+1] = dropout_backward(dZ[i+1], cache_dropout[i])
+            if self.normalization=='batchnorm':
                 dZ[i], grads['W'+str(i)], grads['b'+str(i)], grads['gamma'+str(i)], grads['beta'+str(i)] = affine_bn_relu_backward(dZ[i+1], cache[i])
             elif self.normalization=='layernorm':
                 dZ[i], grads['W'+str(i)], grads['b'+str(i)], grads['gamma'+str(i)], grads['beta'+str(i)] = affine_ln_relu_backward(dZ[i+1], cache[i])

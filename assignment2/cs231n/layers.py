@@ -398,7 +398,7 @@ def dropout_forward(x, dropout_param):
     Outputs:
     - out: Array of the same shape as x.
     - cache: tuple (dropout_param, mask). In training mode, mask is the dropout
-      mask that was used to multiply the input; in test mode, mask is None.
+      mask that was used to multiply the input; in test mode, mask is None. 
 
     NOTE: Please implement **inverted** dropout, not the vanilla version of dropout.
     See http://cs231n.github.io/neural-networks-2/#reg for more details.
@@ -419,7 +419,9 @@ def dropout_forward(x, dropout_param):
         # TODO: Implement training phase forward pass for inverted dropout.   #
         # Store the dropout mask in the mask variable.                        #
         #######################################################################
-        pass
+        random_mask = np.random.random(x.shape)
+        mask = (random_mask < p) / p
+        out = x * mask
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -427,7 +429,7 @@ def dropout_forward(x, dropout_param):
         #######################################################################
         # TODO: Implement the test phase forward pass for inverted dropout.   #
         #######################################################################
-        pass
+        out = x
         #######################################################################
         #                            END OF YOUR CODE                         #
         #######################################################################
@@ -454,7 +456,7 @@ def dropout_backward(dout, cache):
         #######################################################################
         # TODO: Implement training phase backward pass for inverted dropout   #
         #######################################################################
-        pass
+        dx = dout * mask
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
