@@ -31,6 +31,38 @@ def affine_relu_backward(dout, cache):
     return dx, dw, db
 
 
+def affine_bn_relu_forward(x, w, b, gamma, beta, bn_param):
+    a, affine_cache = affine_forward(x, w, b)
+    an, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(an)
+    cache = (affine_cache, bn_cache, relu_cache)
+    return out, cache
+
+
+def affine_bn_relu_backward(dout, cache):
+    affine_cache, bn_cache, relu_cache = cache
+    dan = relu_backward(dout, relu_cache)
+    da, dgamma, dbeta = batchnorm_backward(dan, bn_cache)
+    dx, dw, db = affine_backward(da, affine_cache)
+    return dx, dw, db, dgamma, dbeta
+
+
+def affine_ln_relu_forward(x, w, b, gamma, beta, bn_param):
+    a, affine_cache = affine_forward(x, w, b)
+    an, ln_cache = layernorm_forward(a, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(an)
+    cache = (affine_cache, ln_cache, relu_cache)
+    return out, cache
+
+
+def affine_ln_relu_backward(dout, cache):
+    affine_cache, ln_cache, relu_cache = cache
+    dan = relu_backward(dout, relu_cache)
+    da, dgamma, dbeta = layernorm_backward(dan, ln_cache)
+    dx, dw, db = affine_backward(da, affine_cache)
+    return dx, dw, db, dgamma, dbeta
+
+
 def conv_relu_forward(x, w, b, conv_param):
     """
     A convenience layer that performs a convolution followed by a ReLU.

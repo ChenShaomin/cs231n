@@ -185,6 +185,9 @@ class FullyConnectedNet(object):
         for i in range(1, len(list_dims)):
             self.params['W'+str(i)] = weight_scale * np.random.randn(list_dims[i-1], list_dims[i])
             self.params['b'+str(i)] = np.zeros(list_dims[i])
+            if i < len(list_dims)-1 and (self.normalization=='batchnorm' or self.normalization=='layernorm'):
+                self.params['gamma'+str(i)] = np.ones(list_dims[i])
+                self.params['beta'+str(i)] = np.zeros(list_dims[i])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -249,7 +252,14 @@ class FullyConnectedNet(object):
        
         for i in range(1, self.num_layers):
             W, b = self.params['W'+str(i)], self.params['b'+str(i)]
-            Z[i], cache[i] = affine_relu_forward(Z[i-1], W, b)
+            if self.normalization=='batchnorm':
+                gamma, beta = self.params['gamma'+str(i)], self.params['beta'+str(i)]
+                Z[i], cache[i] = affine_bn_relu_forward(Z[i-1], W, b, gamma, beta, self.bn_params[i-1])
+            elif self.normalization=='layernorm':
+                gamma, beta = self.params['gamma'+str(i)], self.params['beta'+str(i)]
+                Z[i], cache[i] = affine_ln_relu_forward(Z[i-1], W, b, gamma, beta, self.bn_params[i-1])
+            else:
+                Z[i], cache[i] = affine_relu_forward(Z[i-1], W, b)
         
         Z[self.num_layers], cache[self.num_layers] = affine_forward(Z[self.num_layers-1], self.params['W'+str(self.num_layers)],self.params['b'+str(self.num_layers)])
         scores = Z[self.num_layers]
@@ -282,6 +292,10 @@ class FullyConnectedNet(object):
         for i in range(self.num_layers, 0, -1):
             if i == self.num_layers:
                 dZ[i], grads['W'+str(i)], grads['b'+str(i)] = affine_backward(dscores, cache[i])
+            elif self.normalization=='batchnorm':
+                dZ[i], grads['W'+str(i)], grads['b'+str(i)], grads['gamma'+str(i)], grads['beta'+str(i)] = affine_bn_relu_backward(dZ[i+1], cache[i])
+            elif self.normalization=='layernorm':
+                dZ[i], grads['W'+str(i)], grads['b'+str(i)], grads['gamma'+str(i)], grads['beta'+str(i)] = affine_ln_relu_backward(dZ[i+1], cache[i])
             else:
                 dZ[i], grads['W'+str(i)], grads['b'+str(i)] = affine_relu_backward(dZ[i+1], cache[i])
             loss += 0.5 * self.reg * np.sum(self.params['W'+str(i)]**2)
