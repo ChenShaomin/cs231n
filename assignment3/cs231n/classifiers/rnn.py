@@ -144,12 +144,16 @@ class CaptioningRNN(object):
         captions_in_embed, cache_embed = word_embedding_forward(captions_in, W_embed)
         if self.cell_type == 'rnn':
             h, cache_rnn = rnn_forward(captions_in_embed, h0, Wx, Wh, b)
+        elif self.cell_type == 'lstm':
+            h, cache_lstm = lstm_forward(captions_in_embed, h0, Wx, Wh, b)
         scores, cache_scores = temporal_affine_forward(h, W_vocab, b_vocab)
         loss, dscores = temporal_softmax_loss(scores, captions_out, mask)
         
         dh, grads['W_vocab'], grads['b_vocab'] = temporal_affine_backward(dscores, cache_scores)
         if self.cell_type == 'rnn':
             dcaptions_in_embed, dh0, grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(dh, cache_rnn)
+        elif self.cell_type == 'lstm':
+            dcaptions_in_embed, dh0, grads['Wx'], grads['Wh'], grads['b'] = lstm_backward(dh, cache_lstm)
         grads['W_embed'] = word_embedding_backward(dcaptions_in_embed, cache_embed)
         _, grads['W_proj'], grads['b_proj'] = affine_backward(dh0, cache_affine)
         ############################################################################
@@ -218,10 +222,14 @@ class CaptioningRNN(object):
         ###########################################################################
         prev_h, _ = affine_forward(features, W_proj, b_proj)
         captions[:, 0] = self._start
+        c = np.zeros_like(prev_h)
         
         for t in range(max_length-1):
             captions_embed, _ = word_embedding_forward(captions[:, t], W_embed)
-            next_h, _ = rnn_step_forward(captions_embed, prev_h, Wx, Wh, b)
+            if self.cell_type == 'rnn':
+                next_h, _ = rnn_step_forward(captions_embed, prev_h, Wx, Wh, b)
+            elif self.cell_type == 'lstm':
+                next_h, c, _ = lstm_step_forward(captions_embed, prev_h, c, Wx, Wh, b)
             scores, _ = affine_forward(next_h, W_vocab, b_vocab)
             captions[:, t+1] = np.argmax(scores, axis=1)
             prev_h = next_h
